@@ -1,6 +1,20 @@
 # README
 
+
+This project provides an API that allows users to summarize information from a provided URL. The summarization includes details such as industry, company size, and location. The service is built using FastAPI, PyJWT, Pydantic, BeautifulSoup4, and Requests.
+Live Demo
+
+You can access the live version of the API 
+    
+    https://summarizer-wandering-mountain-9255.fly.dev/
+
+Login Credentials
+
+    Username: laksh
+    Password: P@@sw0rd123
+    
 ## Installation
+
 
 To use this project, you'll need to have the following dependencies installed:
 
