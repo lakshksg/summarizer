@@ -1,19 +1,19 @@
 from fastapi import FastAPI,Request, status
 from fastapi.responses import JSONResponse
 from pydantic_ai import Agent
-from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.models.gemini import GeminiModel
 from bs4 import BeautifulSoup
 import requests
 import json
 
 from modals import AgentResponse, TokenResponse
 from utils import parse_agent_response
-from constant import OPEN_AI_KEY, test_user
+from constant import GEMINI_KEY, test_user
 from utils import verify_url
 from auth import create_access_token, verify_token
 
 app = FastAPI()
-model = OpenAIModel('gpt-3.5-turbo-0125', api_key=OPEN_AI_KEY)
+model = GeminiModel('gemini-1.5-flash', api_key=GEMINI_KEY)
 
 
 summarizer_agent = Agent(  
@@ -48,6 +48,7 @@ summarizer_agent = Agent(
 
             - If any of the details (industry, size, or location) are not mentioned in the content, ensure you explicitly state that the information is "Not mentioned."
             - If multiple pieces of information exist, summarize them clearly without going over the word limit.
+            - If info is there then no mentioned should not be present in answer.
             """
 
         
