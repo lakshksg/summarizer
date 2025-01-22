@@ -5,11 +5,12 @@ from pydantic_ai.models.openai import OpenAIModel
 from bs4 import BeautifulSoup
 import requests
 import json
-import re
 
-from modals import AgentResponse
+from modals import AgentResponse, TokenResponse
 from utils import parse_agent_response
-from constant import OPEN_AI_KEY, SECRET_KEY
+from constant import OPEN_AI_KEY, test_user
+from utils import verify_url
+from auth import create_access_token, verify_token
 
 app = FastAPI()
 model = OpenAIModel('gpt-3.5-turbo-0125', api_key=OPEN_AI_KEY)
@@ -66,23 +67,22 @@ def scrape_webpage(url:str):
     except requests.exceptions.RequestException as e:
         return json.dumps({"text": ""})
 
-def verify_token(authorization: str ):
-    if not authorization or not authorization.startswith("Bearer "):
-        return False
-    
-    token = authorization.split(" ")[1]
 
-    if token != SECRET_KEY:
-        return False
+@app.post("/login", response_model=TokenResponse)
+async def login(req: Request):
     
-    return True
-
-def verify_url(url :str):
-    
-    URL_REGEX = re.compile(
-        r'^(https?|ftp)://[^\s/$.?#].[^\s]*$', re.IGNORECASE
-    )
-    return URL_REGEX.match(url)
+    data = await req.json()
+    user = data.get("name") 
+    password = data.get("pass")
+    print(data)
+    if not user or test_user["pass"] != password:
+        return JSONResponse(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            content={"message":"Invalid username or password"}
+        )
+        
+    access_token = create_access_token(data={"user_name": user})
+    return TokenResponse(access_token=access_token, token_type="Bearer")
 
 @app.post("/summarize")
 async def summarize(req: Request):
