@@ -1,18 +1,22 @@
-from fastapi import FastAPI,Request, status
+from fastapi import FastAPI,Request, status, Response
 from fastapi.responses import JSONResponse
+from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse
 from pydantic_ai import Agent
 from pydantic_ai.models.gemini import GeminiModel
-from bs4 import BeautifulSoup
 import requests
 import json
 
 from modals import AgentResponse, TokenResponse
-from utils import parse_agent_response
+from utils import parse_agent_response, scrape_webpage
 from constant import GEMINI_KEY, test_user
 from utils import verify_url
 from auth import create_access_token, verify_token
 
 app = FastAPI()
+
+templates = Jinja2Templates(directory="templates")
+
 model = GeminiModel('gemini-1.5-flash', api_key=GEMINI_KEY)
 
 
@@ -55,42 +59,38 @@ summarizer_agent = Agent(
     ),
 )
 
-def scrape_webpage(url:str):
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
-        text = soup.get_text()
 
-        if text.strip():
-            return json.dumps({"text": text})
+@app.get("/", response_class=HTMLResponse)
+async def index(req: Request):
+    return templates.TemplateResponse("login.html", {"request": req})
 
-    except requests.exceptions.RequestException as e:
-        return json.dumps({"text": ""})
-
+@app.get("/detail", response_class=HTMLResponse)
+async def index(req: Request):
+    return templates.TemplateResponse("summerizer.html", {"request": req})
 
 @app.post("/login", response_model=TokenResponse)
-async def login(req: Request):
-    
+async def login(req: Request, response: Response):
+
     data = await req.json()
-    user = data.get("name") 
+    user = data.get("name")
     password = data.get("pass")
-    print(data)
-    if not user or test_user["pass"] != password:
+    
+    if not user or (test_user["pass"] != password and test_user["name"] != user):
         return JSONResponse(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            content={"message":"Invalid username or password"}
+            content={"message": "Invalid username or password"}
         )
-        
     access_token = create_access_token(data={"user_name": user})
+
     return TokenResponse(access_token=access_token, token_type="Bearer")
+
 
 @app.post("/summarize")
 async def summarize(req: Request):
     
     data = await req.json()
     url = data.get("url") 
-    
+
     if not url or not verify_url(url):
         return JSONResponse(
             status_code=status.HTTP_400_BAD_REQUEST,

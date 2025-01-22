@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Summarizer</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-100 flex justify-center items-center min-h-screen">
+
+    <div class="bg-white p-6 rounded shadow-md w-full max-w-sm">
+        <h2 class="text-2xl font-semibold mb-4">URL Summarizer</h2>
+        
+        <!-- Form -->
+        <form id="url-form" action="javascript:void(0)">
+            <div class="mb-4">
+                <label for="url" class="block text-sm font-medium text-gray-700">Enter URL:</label>
+                <input type="url" name="url" id="url" required class="mt-1 p-2 w-full border border-gray-300 rounded-md focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500" placeholder="https://example.com">
+            </div>
+            <button type="submit" id="submit-btn" class="w-full bg-indigo-600 text-white py-2 rounded-md hover:bg-indigo-700 transition duration-300">Summarize</button>
+        </form>
+        
+        <!-- Error message -->
+        <div id="error-message" class="text-red-600 mt-2 hidden">URL cannot be empty</div>
+
+        <!-- Success response block -->
+        <div id="summarizer-response" class="mt-4 hidden">
+            <h3 class="font-semibold text-lg">Summarizer Output:</h3>
+            <p id="summarizer-text" class="mt-2 text-gray-700"></p>
+        </div>
+        
+        <!-- Summarized data output below the button -->
+        <div id="summarizer-output" class="mt-4 text-sm text-gray-700 hidden">
+            <div id="summarizer-data" class="bg-gray-800 text-white p-4 rounded-md overflow-auto whitespace-pre-wrap font-mono"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById("url-form").addEventListener("submit", async (event) => {
+            event.preventDefault(); 
+    
+            const urlInput = document.getElementById("url");
+            const errorMessage = document.getElementById("error-message");
+            const successBlock = document.getElementById("summarizer-response");
+            const summarizerText = document.getElementById("summarizer-text");
+            const summarizerOutput = document.getElementById("summarizer-output");
+            const summarizerData = document.getElementById("summarizer-data");
+    
+    
+            errorMessage.classList.add('hidden');
+            successBlock.classList.add('hidden');
+            summarizerOutput.classList.add('hidden');
+    
+     
+            if (!urlInput.value.trim()) {
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+    
+            const data = {
+                url: urlInput.value.trim()
+            };
+    
+ 
+            const token = localStorage.getItem('access_token');
+    
+         
+            if (!token) {
+                console.error('Token not found in localStorage');
+                errorMessage.textContent = 'Token is missing. Please log in again.';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+    
+            try {
+      
+                const response = await fetch('/summarize', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}` 
+                    },
+                    body: JSON.stringify(data)
+                });
+    
+                if (response.ok) {
+                    const result = await response.json();
+                    
+          
+                    let formattedOutput = '';
+                    for (const key in result) {
+                        if (result.hasOwnProperty(key)) {
+                            formattedOutput += `<strong class="text-lg">${key}:</strong> ${result[key]}<br>`;
+                        }
+                    }
+                    
+                    summarizerData.innerHTML = formattedOutput;
+                    summarizerOutput.classList.remove('hidden');
+                } else {
+                 
+                    const result = await response.json();
+                    summarizerData.innerHTML = result.message || "An error occurred.";
+                    summarizerOutput.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error("Error:", error);
+                summarizerData.innerHTML = "Failed to fetch summary. Please try again.";
+                summarizerOutput.classList.remove('hidden');
+            }
+        });
+    </script>
+    
+</body>
+</html>
